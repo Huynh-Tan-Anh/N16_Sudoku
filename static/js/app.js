@@ -172,6 +172,7 @@ const resetBg = () => {
     cells.forEach(e => e.classList.remove('hover'));
 }
 
+//kiểm tra lỗi trong Sudoku khi một giá trị được điền vào ô
 const checkErr = (value) => {
     const addErr = (cell) => {
         if (parseInt(cell.getAttribute('data-value')) === value) {
@@ -328,63 +329,6 @@ const returnStartScreen = () => {
     pause_screen.classList.remove('active');
     result_screen.classList.remove('active');
 }
-/*
-const solveSudoku = () => {
-    if (solving) {
-        // Sudoku đang được giải, không làm gì
-        return;
-    }
-
-    solving = true;
-
-    // Hiển thị thông báo hoặc hiệu ứng cho việc giải Sudoku đang diễn ra
-    // Ví dụ: Hiển thị một thông báo "Đang giải Sudoku..." hoặc thêm một hiệu ứng loading
-
-    // Tạo một bản sao của ma trận Sudoku để thực hiện giải Sudoku
-    const sudokuCopy = [...sudoku];
-
-    // Hàm đệ quy để giải Sudoku
-    const solve = () => {
-        for (let row = 0; row < 9; row++) {
-            for (let col = 0; col < 9; col++) {
-                if (sudokuCopy[row][col] === 0) {
-                    for (let num = 1; num <= 9; num++) {
-                        if (isValidMove(sudokuCopy, row, col, num)) {
-                            sudokuCopy[row][col] = num;
-
-                            // Hiển thị quá trình giải Sudoku trên giao diện
-                            // Ví dụ: Cập nhật giá trị của ô vuông Sudoku
-
-                            if (solve()) {
-                                return true;
-                            }
-
-                            sudokuCopy[row][col] = 0;
-
-                            // Hiển thị quá trình giải Sudoku trên giao diện
-                            // Ví dụ: Cập nhật giá trị của ô vuông Sudoku để hiển thị quá trình backtracking
-                        }
-                    }
-
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    };
-
-    // Gọi hàm đệ quy để giải Sudoku
-    solve();
-
-    // Khi quá trình giải Sudoku hoàn thành
-
-    // Hiển thị Sudoku đã được giải
-    // Ví dụ: Cập nhật các ô vuông Sudoku trên giao diện với các giá trị đã giải
-
-    solving = false;
-};
-*/
 
 // them button event
 document.querySelector('#btn-level').addEventListener('click', (e) => {
@@ -419,11 +363,6 @@ document.querySelector('#btn-continue').addEventListener('click', () => {
     }
 });
 
-document.querySelector('#solveButton').addEventListener('click', () => {
-    solveGame();
-});
-
-
 document.querySelector('#btn-pause').addEventListener('click', () => {
     pause_screen.classList.add('active');
     pause = true;
@@ -455,9 +394,6 @@ document.querySelector('#btn-delete').addEventListener('click', () => {
     removeErr();
 })
 
-document.querySelector('#solveButton').addEventListener('click', () => {
-    solveSudoku();
-});
 
 // -------------
 
@@ -482,3 +418,123 @@ const init = () => {
 }
 
 init();
+
+function solveSudoku(sudokuBoard) {
+    const emptyCell = findEmptyCell(sudokuBoard);
+
+    // Nếu không còn ô trống, Sudoku đã được giải
+    if (!emptyCell) {
+        return true;
+    }
+
+    const [row, col] = emptyCell;
+
+    // Thử các số từ 1 đến 9 cho ô trống hiện tại
+    for (let num = 1; num <= 9; num++) {
+        if (isValidNumber(sudokuBoard, row, col, num)) {
+            // Nếu số num hợp lệ tại ô hiện tại, gán số đó vào ô
+            sudokuBoard[row][col] = num;
+
+            // Đệ quy để tiếp tục giải
+            if (solveSudoku(sudokuBoard)) {
+                return true;
+            }
+
+            // Nếu không tìm thấy giải pháp, quay lui và thử số khác
+            sudokuBoard[row][col] = 0;
+        }
+    }
+
+    // Nếu không tìm thấy giải pháp sau khi thử tất cả các số, Sudoku không có giải pháp
+    return false;
+}
+
+function findEmptyCell(sudokuBoard) {
+    // Tìm ô trống trong bảng Sudoku và trả về tọa độ [row, col] của ô đó
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            if (sudokuBoard[row][col] === 0) {
+                return [row, col];
+            }
+        }
+    }
+
+    // Nếu không còn ô trống, trả về null
+    return null;
+}
+
+function isValidNumber(sudokuBoard, row, col, num) {
+    // Kiểm tra xem số num có hợp lệ tại ô [row, col] hay không
+
+    // Kiểm tra hàng
+    for (let i = 0; i < 9; i++) {
+        if (sudokuBoard[row][i] === num) {
+            return false;
+        }
+    }
+
+    // Kiểm tra cột
+    for (let i = 0; i < 9; i++) {
+        if (sudokuBoard[i][col] === num) {
+            return false;
+        }
+    }
+
+    // Kiểm tra khu vực 3x3
+    const startRow = Math.floor(row / 3) * 3;
+    const startCol = Math.floor(col / 3) * 3;
+
+    for (let i = startRow; i < startRow + 3; i++) {
+        for (let j = startCol; j < startCol + 3; j++) {
+            if (sudokuBoard[i][j] === num) {
+                return false;
+            }
+        }
+    }
+
+    // Nếu số num hợp lệ tại ô [row, col]
+    return true;
+}
+
+const solveButton = document.getElementById('solveButton');
+
+solveButton.addEventListener('click', () => {
+    const sudokuBoard = getBoard(); // Hàm getBoard() lấy dữ liệu từ bảng Sudoku
+
+    if (solveSudoku(sudokuBoard)) {
+        // Nếu tìm thấy giải pháp, cập nhật bảng Sudoku với giá trị đã giải
+        updateBoard(sudokuBoard);
+    } else {
+        // Nếu không tìm thấy giải pháp, hiển thị thông báo lỗi
+        alert('Không tìm thấy giải pháp cho Sudoku này!');
+    }
+});
+
+function getBoard() {
+    const cells = document.getElementsByClassName('main-grid-cell');
+    const board = [];
+
+    for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        const cellValue = parseInt(cell.innerText) || 0; // Lấy giá trị ô và chuyển đổi thành số nguyên. Nếu không hợp lệ, mặc định là 0.
+        const [row, col] = cell.getAttribute('data-cell').split('-').map(Number);
+
+        if (!board[row]) {
+            board[row] = [];
+        }
+
+        board[row][col] = cellValue;
+    }
+
+    return board;
+}
+
+function updateBoard(board) {
+    const cells = document.getElementsByClassName('main-grid-cell');
+
+    for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        const [row, col] = cell.getAttribute('data-cell').split('-').map(Number);
+        cell.innerText = board[row][col];
+    }
+}
